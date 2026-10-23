@@ -1,5 +1,5 @@
 streamlit
 trafilatura
-feedparser
+beautifulsoup4
 ruamel.yaml
 pyyaml
