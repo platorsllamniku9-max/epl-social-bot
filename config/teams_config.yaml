@@ -24,4 +24,30 @@ liverpool:
   default_footer: "🔴 Up the Reds! Drop your comments below!"
   sources:
     - "https://www.bbc.com/sport/football/teams/liverpool"
+    - "https://www.skysports.com/liverpool-news"arsenal:
+  page_name: "Arsenal FC Central"
+  handle: "@Arsenal"
+  avatar: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=100&auto=format&fit=crop&q=80"
+  hashtags:
+    - "#AFC"
+    - "#COYG"
+    - "#Arsenal"
+    - "#PremierLeague"
+  default_footer: "👇 What are your thoughts on Gunners' latest performance?"
+  sources:
+    - "https://www.bbc.com/sport/football/teams/arsenal"
+    - "https://www.skysports.com/arsenal-news"
+
+liverpool:
+  page_name: "Liverpool FC Pulse"
+  handle: "@LFC"
+  avatar: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=100&auto=format&fit=crop&q=80"
+  hashtags:
+    - "#LFC"
+    - "#YNWA"
+    - "#Liverpool"
+    - "#PremierLeague"
+  default_footer: "🔴 Up the Reds! Drop your comments below!"
+  sources:
+    - "https://www.bbc.com/sport/football/teams/liverpool"
     - "https://www.skysports.com/liverpool-news"
