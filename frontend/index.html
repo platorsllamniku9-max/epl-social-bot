@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPL Social Content Manager</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        epl: {
+                            purple: '#38003c',
+                            green: '#00ff85',
+                            pink: '#e90052',
+                            blue: '#04f5ff'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-sans h-screen flex flex-col overflow-hidden transition-colors duration-200">
+
+    <!-- Top Navigation -->
+    <header class="bg-epl-purple text-white border-b border-purple-900 shadow-md z-10 flex-shrink-0">
+        <div class="px-6 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-epl-green text-epl-purple p-2 rounded-lg font-black text-xl flex items-center justify-center w-10 h-10">
+                    <i class="fa-solid font-bold fa-futbol"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-none">EPL Social Hub</h1>
+                    <span class="text-xs text-gray-300">Premier League Content Operations</span>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="flex space-x-1 bg-purple-950 p-1 rounded-xl">
+                <button onclick="switchTab('composer')" id="tab-composer" class="nav-tab px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 bg-epl-green text-epl-purple font-semibold shadow">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Post Composer</span>
+                </button>
+                <button onclick="switchTab('feed')" id="tab-feed" class="nav-tab px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 text-gray-300 hover:text-white">
+                    <i class="fa-solid fa-rss"></i>
+                    <span>Feed & Ingestion</span>
+                </button>
+                <button onclick="switchTab('config')" id="tab-config" class="nav-tab px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 text-gray-300 hover:text-white">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>Team Config Editor</span>
+                </button>
+            </nav>
+
+            <!-- Right Controls -->
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle" class="p-2 rounded-lg bg-purple-900 hover:bg-purple-800 text-gray-200 transition">
+                    <i class="fa-solid fa-moon" id="theme-toggle-dark-icon"></i>
+                    <i class="fa-solid fa-sun hidden" id="theme-toggle-light-icon"></i>
+                </button>
+                <div class="flex items-center space-x-2 text-xs border-l border-purple-800 pl-4">
+                    <div id="api-status-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                    <span id="api-status-text" class="text-gray-300 font-medium">API Connected</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Viewport -->
+    <main class="flex-1 overflow-hidden relative">
+
+        <!-- SECTION 1: INTERACTIVE POST COMPOSER -->
+        <section id="view-composer" class="h-full flex flex-col lg:flex-row overflow-hidden">
+            <!-- Left Pane: Editor -->
+            <div class="lg:w-1/2 h-full flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-y-auto custom-scrollbar p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-pen-nib text-epl-pink"></i> Interactive Composer
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="insertTemplate('matchday')" class="px-2.5 py-1 text-xs rounded bg-purple-100 text-epl-purple dark:bg-purple-900/40 dark:text-purple-300 font-medium hover:bg-purple-200 transition">
+                            + Matchday
+                        </button>
+                        <button onclick="insertTemplate('breaking')" class="px-2.5 py-1 text-xs rounded bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 font-medium hover:bg-red-200 transition">
+                            + Breaking News
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Club Selector -->
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Select Club Context</label>
+                    <select id="composer-club-select" onchange="updateClubContext()" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-epl-purple dark:focus:ring-epl-green">
+                    </select>
+                </div>
+
+                <!-- Scrape Direct URL Input -->
+                <div class="mb-4 p-3 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900 rounded-lg">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-epl-purple dark:text-purple-300 mb-1">Scrape Specific Article URL</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="scrape-url-input" placeholder="https://www.bbc.com/sport/football/..." class="flex-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-1.5 text-xs focus:outline-none">
+                        <button onclick="scrapeArticleUrl()" class="px-3 py-1.5 bg-epl-purple text-white text-xs font-semibold rounded-lg hover:bg-purple-900 transition flex items-center gap-1">
+                            <i class="fa-solid fa-spider"></i> Fetch URL
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Text Area -->
+                <div class="mb-4 flex-1 flex flex-col">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Post Content</label>
+                        <span id="char-count" class="text-xs text-gray-400 font-mono">0 chars</span>
+                    </div>
+                    <textarea id="composer-text" oninput="renderPreviews()" placeholder="What's happening in the Premier League? Draft your post here..." class="w-full flex-1 min-h-[160px] p-4 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-epl-purple dark:focus:ring-epl-green font-sans text-sm leading-relaxed"></textarea>
+                </div>
+
+                <!-- Hashtag Injector Quick Buttons -->
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Target Hashtags & Quick Tags</label>
+                    <div id="hashtag-container" class="flex flex-wrap gap-1.5">
+                    </div>
+                </div>
+
+                <!-- Media Attachment Controls -->
+                <div class="mb-6 p-4 border border-dashed border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Media Attachment URL</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="composer-media-url" placeholder="https://images.unsplash.com/..." oninput="renderPreviews()" class="flex-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-epl-purple">
+                    </div>
+                </div>
+
+                <!-- Post Actions -->
+                <div class="flex gap-3 mt-auto">
+                    <button onclick="clearComposer()" class="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 transition">Clear</button>
+                    <button onclick="copyToClipboard()" class="flex-1 py-2.5 bg-epl-purple text-white rounded-lg text-sm font-semibold hover:bg-purple-900 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-copy"></i> Copy Draft Content
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Pane: Live Multi-Platform Previews -->
+            <div class="lg:w-1/2 h-full bg-gray-100 dark:bg-gray-950 flex flex-col overflow-hidden">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 backdrop-blur flex justify-between items-center">
+                    <span class="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Live Render Previews</span>
+                    <div class="flex gap-1 bg-gray-200 dark:bg-gray-800 p-1 rounded-lg">
+                        <button onclick="switchPreviewTab('x')" id="p-tab-x" class="preview-tab px-3 py-1 rounded-md text-xs font-semibold transition bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-white flex items-center gap-1.5">
+                            <i class="fa-brands fa-x-twitter"></i> X / Twitter
+                        </button>
+                        <button onclick="switchPreviewTab('linkedin')" id="p-tab-linkedin" class="preview-tab px-3 py-1 rounded-md text-xs font-semibold transition text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                            <i class="fa-brands fa-linkedin text-blue-600"></i> LinkedIn
+                        </button>
+                        <button onclick="switchPreviewTab('facebook')" id="p-tab-facebook" class="preview-tab px-3 py-1 rounded-md text-xs font-semibold transition text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                            <i class="fa-brands fa-facebook text-blue-500"></i> Facebook
+                        </button>
+                        <button onclick="switchPreviewTab('instagram')" id="p-tab-instagram" class="preview-tab px-3 py-1 rounded-md text-xs font-semibold transition text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                            <i class="fa-brands fa-instagram text-pink-500"></i> Instagram
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Previews Container -->
+                <div class="flex-1 overflow-y-auto custom-scrollbar p-6 flex justify-center items-start">
+                    <!-- X / TWITTER PREVIEW -->
+                    <div id="preview-x" class="preview-card w-full max-w-md bg-black text-white rounded-xl border border-gray-800 p-4 shadow-xl">
+                        <div class="flex items-start gap-3">
+                            <img id="x-avatar" src="" class="w-10 h-10 rounded-full object-cover">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-1">
+                                    <span id="x-name" class="font-bold text-sm truncate">Team Name</span>
+                                    <i class="fa-solid fa-circle-check text-blue-400 text-xs"></i>
+                                    <span id="x-handle" class="text-gray-500 text-xs truncate">@handle</span>
+                                    <span class="text-gray-500 text-xs">· 1m</span>
+                                </div>
+                                <p id="x-text" class="text-sm mt-1 whitespace-pre-wrap break-words leading-normal"></p>
+                                <div id="x-media-container" class="mt-3 rounded-2xl overflow-hidden border border-gray-800 hidden">
+                                    <img id="x-media" src="" class="w-full max-h-64 object-cover">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LINKEDIN PREVIEW -->
+                    <div id="preview-linkedin" class="preview-card w-full max-w-md bg-white text-gray-900 rounded-xl border border-gray-200 shadow-xl hidden">
+                        <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <img id="li-avatar" src="" class="w-12 h-12 rounded-sm object-cover">
+                                <div>
+                                    <h4 id="li-name" class="font-bold text-sm leading-tight">Team Name</h4>
+                                    <p class="text-xs text-gray-500">Official Premier League Account</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <p id="li-text" class="text-sm whitespace-pre-wrap break-words leading-relaxed"></p>
+                        </div>
+                        <div id="li-media-container" class="hidden">
+                            <img id="li-media" src="" class="w-full max-h-72 object-cover">
+                        </div>
+                    </div>
+
+                    <!-- FACEBOOK PREVIEW -->
+                    <div id="preview-facebook" class="preview-card w-full max-w-md bg-white text-gray-900 rounded-xl border border-gray-200 shadow-xl hidden">
+                        <div class="p-3 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <img id="fb-avatar" src="" class="w-10 h-10 rounded-full object-cover">
+                                <div>
+                                    <h4 id="fb-name" class="font-bold text-sm leading-tight flex items-center gap-1">
+                                        Team Name <i class="fa-solid fa-circle-check text-blue-500 text-xs"></i>
+                                    </h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="px-3 pb-3">
+                            <p id="fb-text" class="text-sm whitespace-pre-wrap break-words leading-relaxed"></p>
+                        </div>
+                        <div id="fb-media-container" class="hidden">
+                            <img id="fb-media" src="" class="w-full max-h-72 object-cover">
+                        </div>
+                    </div>
+
+                    <!-- INSTAGRAM PREVIEW -->
+                    <div id="preview-instagram" class="preview-card w-full max-w-sm bg-white text-gray-900 rounded-xl border border-gray-200 shadow-xl hidden">
+                        <div class="p-3 flex items-center gap-2 border-b border-gray-100">
+                            <img id="ig-avatar" src="" class="w-8 h-8 rounded-full object-cover border border-pink-500">
+                            <span id="ig-handle" class="font-bold text-xs">handle</span>
+                        </div>
+                        <div id="ig-media-container" class="bg-gray-100 aspect-square flex items-center justify-center overflow-hidden">
+                            <img id="ig-media" src="" class="w-full h-full object-cover hidden">
+                            <div id="ig-media-placeholder" class="text-gray-400 text-center p-4">
+                                <i class="fa-solid fa-image text-3xl mb-1"></i>
+                                <p class="text-xs">Attach an image to preview Instagram Card</p>
+                            </div>
+                        </div>
+                        <div class="p-3 text-xs">
+                            <span id="ig-caption-handle" class="font-bold mr-1">handle</span>
+                            <span id="ig-text" class="whitespace-pre-wrap break-words"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: RSS & FEED INGESTION BOARD -->
+        <section id="view-feed" class="h-full flex flex-col bg-gray-50 dark:bg-gray-900 overflow-hidden hidden">
+            <div class="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex flex-wrap gap-4 items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <h2 class="text-lg font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-rss text-orange-500"></i> Premier League Live Ingestion
+                    </h2>
+                    <span id="feed-count-badge" class="bg-purple-100 text-epl-purple dark:bg-purple-900/60 dark:text-purple-300 text-xs font-bold px-2.5 py-0.5 rounded-full">0 Articles</span>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <select id="feed-filter-club" class="bg-gray-100 dark:bg-gray-700 border-none rounded-lg px-3 py-1.5 text-xs font-semibold">
+                    </select>
+
+                    <button onclick="fetchBackendFeed()" class="px-3 py-1.5 bg-epl-green text-epl-purple rounded-lg text-xs font-bold hover:bg-emerald-400 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrows-rotate"></i> Ingest Live Sources
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                <div id="feed-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: TEAM CONFIGURATION EDITOR -->
+        <section id="view-config" class="h-full flex flex-col bg-gray-50 dark:bg-gray-900 overflow-hidden hidden">
+            <div class="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-epl-blue"></i> Graphical Config Manager
+                    </h2>
+                </div>
+            </div>
+
+            <div class="flex-1 flex overflow-hidden">
+                <div class="w-64 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800/50 flex flex-col">
+                    <div id="config-team-list" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white dark:bg-gray-900" id="config-editor-panel">
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+
+    <script>
+        const API_BASE_URL = "http://localhost:8000";
+        let teamsConfig = {};
+        let currentFeedArticles = [];
+        let selectedConfigKey = "arsenal";
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initTheme();
+            await loadBackendConfig();
+        });
+
+        async function loadBackendConfig() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/config`);
+                if (!res.ok) throw new Error("Backend offline");
+                teamsConfig = await res.json();
+                
+                document.getElementById('api-status-indicator').className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+                document.getElementById('api-status-text').innerText = "API Connected";
+
+                populateClubSelectors();
+                updateClubContext();
+                renderConfigList();
+                renderConfigEditor();
+                fetchBackendFeed();
+            } catch (err) {
+                console.warn("Backend API not reachable. Using fallback config.");
+                document.getElementById('api-status-indicator').className = "w-2.5 h-2.5 rounded-full bg-red-500";
+                document.getElementById('api-status-text').innerText = "API Offline (Mock Mode)";
+                
+                teamsConfig = {
+                    "arsenal": {
+                        page_name: "Arsenal FC Central",
+                        handle: "@Arsenal",
+                        avatar: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=100&auto=format&fit=crop&q=80",
+                        hashtags: ["#AFC", "#COYG"],
+                        default_footer: "Drop your thoughts below!",
+                        sources: ["https://www.bbc.com/sport/football/teams/arsenal"]
+                    }
+                };
+                populateClubSelectors();
+                updateClubContext();
+            }
+        }
+
+        function populateClubSelectors() {
+            const select = document.getElementById('composer-club-select');
+            const feedSelect = document.getElementById('feed-filter-club');
+            select.innerHTML = '';
+            feedSelect.innerHTML = '';
+
+            Object.keys(teamsConfig).forEach(key => {
+                const team = teamsConfig[key];
+                select.innerHTML += `<option value="${key}">${team.page_name}</option>`;
+                feedSelect.innerHTML += `<option value="${key}">${team.page_name}</option>`;
+            });
+        }
+
+        function updateClubContext() {
+            const clubKey = document.getElementById('composer-club-select').value;
+            const config = teamsConfig[clubKey] || Object.values(teamsConfig)[0];
+            
+            const container = document.getElementById('hashtag-container');
+            container.innerHTML = '';
+            if (config && config.hashtags) {
+                config.hashtags.forEach(tag => {
+                    const chip = document.createElement('button');
+                    chip.className = 'px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-xs font-semibold hover:bg-epl-green hover:text-epl-purple transition';
+                    chip.innerText = tag;
+                    chip.onclick = () => appendHashtag(tag);
+                    container.appendChild(chip);
+                });
+            }
+            renderPreviews();
+        }
+
+        function appendHashtag(tag) {
+            const area = document.getElementById('composer-text');
+            if (!area.value.includes(tag)) {
+                area.value = area.value ? `${area.value} ${tag}` : tag;
+                renderPreviews();
+            }
+        }
+
+        async function scrapeArticleUrl() {
+            const url = document.getElementById('scrape-url-input').value.trim();
+            const clubKey = document.getElementById('composer-club-select').value;
+
+            if (!url) {
+                showToast("Please enter a valid URL");
+                return;
+            }
+
+            showToast("Scraping article via Python backend...");
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/scrape-url?url=${encodeURIComponent(url)}&club_key=${clubKey}`);
+                if (!res.ok) throw new Error("Failed to scrape URL");
+                const data = await res.json();
+
+                const config = teamsConfig[clubKey] || {};
+                const draftText = `🚨 BREAKING: ${data.title}\n\n${data.summary}\n\n🔗 Read full story: ${data.article_url}\n\n${config.default_footer || ''}\n\n${(config.hashtags || []).join(' ')}`;
+                
+                document.getElementById('composer-text').value = draftText;
+                if (data.image_url) {
+                    document.getElementById('composer-media-url').value = data.image_url;
+                }
+                renderPreviews();
+                showToast("Article successfully scraped into Composer!");
+            } catch (err) {
+                showToast("Error scraping URL. Check backend logs.");
+            }
+        }
+
+        async function fetchBackendFeed() {
+            const clubKey = document.getElementById('feed-filter-club').value || Object.keys(teamsConfig)[0];
+            const config = teamsConfig[clubKey];
+            if (!config) return;
+
+            showToast("Ingesting live RSS/Web sources...");
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/ingest-feed`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        club_key: clubKey,
+                        urls: config.sources || [],
+                        limit: 6
+                    })
+                });
+                if (!res.ok) throw new Error("Ingestion failed");
+                currentFeedArticles = await res.json();
+                renderFeedGrid();
+                showToast("Feed successfully updated!");
+            } catch (err) {
+                showToast("Ingestion failed. Ensure Python backend is running.");
+            }
+        }
+
+        function renderFeedGrid() {
+            const grid = document.getElementById('feed-grid');
+            grid.innerHTML = '';
+            document.getElementById('feed-count-badge').innerText = `${currentFeedArticles.length} Articles`;
+
+            currentFeedArticles.forEach((art, idx) => {
+                const card = document.createElement('div');
+                card.className = "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm flex flex-col hover:shadow-md transition";
+                card.innerHTML = `
+                    <div class="p-4 flex-1 flex flex-col">
+                        <div class="flex items-center justify-between text-xs text-gray-400 mb-2">
+                            <span><i class="fa-solid fa-newspaper"></i> ${art.source_domain}</span>
+                            <span>${art.published_time}</span>
+                        </div>
+                        <h3 class="font-bold text-sm text-gray-900 dark:text-white mb-2 line-clamp-2">${art.title}</h3>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-3 mb-4 flex-1">${art.summary}</p>
+                        <div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                            <a href="${art.article_url}" target="_blank" class="text-xs text-gray-400 hover:text-epl-purple dark:hover:text-epl-green transition">
+                                Link <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                            <button onclick="draftFromFeedIndex(${idx})" class="px-3 py-1.5 bg-epl-purple hover:bg-purple-900 text-white text-xs font-semibold rounded-lg transition">
+                                Draft Post
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function draftFromFeedIndex(idx) {
+            const art = currentFeedArticles[idx];
+            if (!art) return;
+
+            const clubKey = art.club_key;
+            const config = teamsConfig[clubKey] || {};
+
+            document.getElementById('composer-club-select').value = clubKey;
+            updateClubContext();
+
+            const draftText = `🚨 UPDATE: ${art.title}\n\n${art.summary}\n\n🔗 Read more: ${art.article_url}\n\n${config.default_footer || ''}\n\n${(config.hashtags || []).join(' ')}`;
+            document.getElementById('composer-text').value = draftText;
+            if (art.image_url) document.getElementById('composer-media-url').value = art.image_url;
+
+            switchTab('composer');
+            renderPreviews();
+            showToast("Draft loaded into Composer!");
+        }
+
+        function renderPreviews() {
+            const clubKey = document.getElementById('composer-club-select').value;
+            const config = teamsConfig[clubKey] || { page_name: 'EPL Club', handle: '@club', avatar: '' };
+            const text = document.getElementById('composer-text').value;
+            const mediaUrl = document.getElementById('composer-media-url').value;
+
+            document.getElementById('char-count').innerText = `${text.length} chars`;
+
+            document.getElementById('x-avatar').src = config.avatar;
+            document.getElementById('x-name').innerText = config.page_name;
+            document.getElementById('x-handle').innerText = config.handle;
+            document.getElementById('x-text').innerText = text || "Drafting preview...";
+
+            document.getElementById('li-avatar').src = config.avatar;
+            document.getElementById('li-name').innerText = config.page_name;
+            document.getElementById('li-text').innerText = text || "Drafting preview...";
+
+            document.getElementById('fb-avatar').src = config.avatar;
+            document.getElementById('fb-name').innerText = config.page_name;
+            document.getElementById('fb-text').innerText = text || "Drafting preview...";
+
+            document.getElementById('ig-avatar').src = config.avatar;
+            document.getElementById('ig-handle').innerText = (config.handle || '').replace('@', '').toLowerCase();
+            document.getElementById('ig-caption-handle').innerText = (config.handle || '').replace('@', '').toLowerCase();
+            document.getElementById('ig-text').innerText = text || "Drafting preview...";
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-tab').forEach(b => {
+                b.classList.remove('bg-epl-green', 'text-epl-purple', 'font-semibold', 'shadow');
+                b.classList.add('text-gray-300');
+            });
+            const activeBtn = document.getElementById(`tab-${tab}`);
+            activeBtn.classList.add('bg-epl-green', 'text-epl-purple', 'font-semibold', 'shadow');
+            activeBtn.classList.remove('text-gray-300');
+
+            document.getElementById('view-composer').classList.add('hidden');
+            document.getElementById('view-feed').classList.add('hidden');
+            document.getElementById('view-config').classList.add('hidden');
+
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+        }
+
+        function switchPreviewTab(platform) {
+            document.querySelectorAll('.preview-tab').forEach(btn => {
+                btn.classList.remove('bg-white', 'dark:bg-gray-700', 'shadow', 'text-gray-900', 'dark:text-white');
+                btn.classList.add('text-gray-600', 'dark:text-gray-400');
+            });
+            const active = document.getElementById(`p-tab-${platform}`);
+            active.classList.add('bg-white', 'dark:bg-gray-700', 'shadow', 'text-gray-900', 'dark:text-white');
+
+            document.querySelectorAll('.preview-card').forEach(card => card.classList.add('hidden'));
+            document.getElementById(`preview-${platform}`).classList.remove('hidden');
+        }
+
+        function renderConfigList() {
+            const list = document.getElementById('config-team-list');
+            list.innerHTML = '';
+            Object.keys(teamsConfig).forEach(key => {
+                const team = teamsConfig[key];
+                list.innerHTML += `
+                    <button onclick="selectedConfigKey='${key}'; renderConfigEditor();" class="w-full text-left px-3 py-2 rounded text-xs font-medium hover:bg-gray-100 dark:hover:bg-gray-700">
+                        ${team.page_name}
+                    </button>
+                `;
+            });
+        }
+
+        function renderConfigEditor() {
+            const panel = document.getElementById('config-editor-panel');
+            const config = teamsConfig[selectedConfigKey];
+            if (!config) return;
+
+            panel.innerHTML = `
+                <h3 class="text-lg font-bold mb-4">${config.page_name} Configuration</h3>
+                <pre class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg text-xs overflow-x-auto">${JSON.stringify(config, null, 2)}</pre>
+            `;
+        }
+
+        function copyToClipboard() {
+            const text = document.getElementById('composer-text').value;
+            if (!text) return showToast("Nothing to copy!");
+            navigator.clipboard.writeText(text);
+            showToast("Copied to clipboard!");
+        }
+
+        function clearComposer() {
+            document.getElementById('composer-text').value = '';
+            document.getElementById('composer-media-url').value = '';
+            renderPreviews();
+        }
+
+        function showToast(msg) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'pointer-events-auto bg-gray-900 text-white px-4 py-2 rounded shadow-lg text-xs font-semibold';
+            toast.innerText = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function initTheme() {
+            const toggleBtn = document.getElementById('theme-toggle');
+            toggleBtn.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+            });
+        }
+    </script>
+</body>
+</html>
